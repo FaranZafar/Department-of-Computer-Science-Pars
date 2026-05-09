@@ -50,6 +50,7 @@ if ($result) {
                     'room' => $row['room_name'],
                     'is_submitted' => ($row['submission_check'] > 0)
                 ],
+                'stats' => ['present' => 0, 'absent' => 0],
                 'students' => [] 
             ];
         }
@@ -59,6 +60,9 @@ if ($result) {
                 'full_name' => $row['full_name'], 
                 'status' => $row['daily_status']
             ];
+            // Increment Stats
+            if($row['daily_status'] == 'Present') $data[$course_key]['stats']['present']++;
+            if($row['daily_status'] == 'Absent') $data[$course_key]['stats']['absent']++;
         }
     }
 }
@@ -67,133 +71,112 @@ if ($result) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Instructor Dashboard</title>
+    <title>Instructor Dashboard | PARS</title>
     <link rel="icon" type="image/png" href="../images/pars.png">
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        body { 
-            background-color: #f4f7f6; 
-            font-family: 'Inter', sans-serif; 
-        }
-        .course-card { 
-            border: none; 
-            border-radius: 12px; 
-            margin-bottom: 20px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-        }
-        .btn-course { 
-            width: 100%; 
-            text-align: left; 
-            padding: 1.5rem; 
-            background: #fff; 
-            border: none; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        .btn-course:not(.collapsed) { 
-            background-color: #eef2ff; 
-            border-bottom: 2px solid #2563eb; 
-        }
-        .sched-info { 
-            font-size: 0.85rem; 
-            color: #64748b; 
-            margin-top: 5px;
-         }
+        body { background-color: #f4f7f6; font-family: 'Inter', sans-serif; }
+        .navbar-custom { background: #152259; border-bottom: 3px solid #ffc107; color: white; }
+        .course-card { border: none; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; }
+        .btn-course { width: 100%; text-align: left; padding: 1.2rem; background: #fff; border: none; display: flex; justify-content: space-between; align-items: center; }
+        .btn-course:not(.collapsed) { background-color: #f0f4ff; border-bottom: 2px solid #2563eb; }
         
-        .print-only-status { 
-            
-            display: none; 
-            font-weight: bold; 
-        }
+        /* Dynamic Status for Print */
+        .print-status-text { display: none; font-weight: bold; }
 
         @media print {
-            body * { 
-                visibility: hidden; 
-            }
-            .print-section, .print-section * { 
-                visibility: visible; 
-            }
-            .print-section { 
-                position: absolute; 
-                left: 0; 
-                top: 0; 
-                width: 100%; 
-                background: white; 
-            }
-            .no-print { 
-                display: none !important; 
-            }
-            .btn-group-toggle { 
-                display: none !important; 
-            }
-            .print-only-status { 
-                display: block !important; 
-            }
-            table { 
-                width: 100% !important; 
-                border-collapse: collapse; 
-            }
-            th, td { 
-                border: 1px solid #000 !important; 
-                padding: 8px !important; 
+            body { background: white !important; }
+            .no-print, .btn-group-toggle, .navbar, .search-container, .btn, form > .mt-4 { display: none !important; }
+            
+            /* Only show the section being printed */
+            .card { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+            .collapse { display: block !important; }
+            .course-card { display: none; }
+            .course-card.printing { display: block !important; }
+            
+            /* Show text status instead of buttons */
+            .print-status-text { display: inline-block !important; }
+            
+            .table-sm td, .table-sm th { padding: 0.5rem; border: 1px solid #dee2e6 !important; }
+            
+            .print-header {
+                display: flex !important;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 2px solid #152259;
+                margin-bottom: 20px;
+                padding-bottom: 10px;
             }
         }
+        
+        .print-header { display: none; }
+        .logo-print { width: 80px; height: auto; }
     </style>
 </head>
 <body>
 
-<div class="container py-4">
-    <div class="row align-items-center mb-4 no-print">
+<nav class="navbar navbar-custom mb-4 no-print">
+    <div class="container">
+        <span class="navbar-brand font-weight-bold"><i class="fas fa-university mr-2"></i> PARS CAMPUS</span>
+        <div class="ml-auto">
+            <span class="mr-3 d-none d-md-inline text-white">Welcome, <strong><?= htmlspecialchars($teacher['FirstName']) ?></strong></span>
+            <a href="../logout.php" class="btn btn-outline-warning btn-sm">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-2">
+    <!-- Header Controls -->
+    <div class="row mb-4 no-print">
         <div class="col-md-6">
-            <h2 class="font-weight-bold">Instructor Dashboard</h2>
-            <p class="text-muted">Instructor: <?= htmlspecialchars($teacher['FirstName'] . " " . $teacher['LastName']) ?></p>
+            <h3 class="font-weight-bold text-dark">Instructor Dashboard</h3>
         </div>
         <div class="col-md-6 text-right">
             <form method="GET" class="form-inline justify-content-end">
-                <label class="mr-2 font-weight-bold">Date:</label>
-                <input type="date" name="date" class="form-control mr-2" value="<?= $view_date ?>" onchange="this.form.submit()">
-                <a href="../logout.php" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt">Log Out</i></a>
+                <input type="date" name="date" class="form-control shadow-sm" value="<?= $view_date ?>" onchange="this.form.submit()">
             </form>
         </div>
     </div>
 
-    <?php if (empty($data)): ?>
-        <div class="alert alert-warning">No classes found for this date.</div>
-    <?php else: ?>
+    <?php if (!empty($data)): ?>
         <div id="courseAccordion">
             <?php $i = 0; foreach($data as $key => $content): $i++; ?>
-                <div class="card course-card print-target-<?= $i ?>">
+                <div class="card course-card print-target-<?= $i ?>" id="card-<?= $i ?>">
+                    
+                    <!-- Print Header (Hidden on Screen) -->
+                    <div class="print-header">
+                        <div>
+                            <h2 style="color:#152259; margin:0;">PARS CAMPUS</h2>
+                            <p style="margin:0;">Attendance Report: <?= date('M d, Y', strtotime($view_date)) ?></p>
+                            <small><?= $content['details']['code'] ?> - <?= $content['details']['title'] ?> (Section <?= $content['details']['section'] ?>)</small>
+                        </div>
+                        <img src="../images/pars.png" class="logo-print" alt="Logo">
+                    </div>
+
                     <div class="card-header p-0 no-print">
                         <button class="btn btn-course collapsed" data-toggle="collapse" data-target="#collapse<?= $i ?>">
                             <div>
-                                <span class="h5 mb-0 font-weight-bold"><?= $content['details']['code'] ?>: <?= $content['details']['title'] ?></span>
-                                <span class="badge badge-info ml-2">Section: <?= $content['details']['section'] ?></span>
-                                
-                                <?php if($content['details']['is_submitted']): ?>
-                                    <span class="badge badge-success ml-1"><i class="fas fa-check-circle"></i> Marked</span>
-                                <?php else: ?>
-                                    <span class="badge badge-danger ml-1"><i class="fas fa-times-circle"></i> Not Marked</span>
-                                <?php endif; ?>
-
-                                <div class="sched-info">
-                                    <i class="far fa-clock"></i> <?= $content['details']['day'] ?> | 
-                                    <?= date("g:i A", strtotime($content['details']['start'])) ?> - <?= date("g:i A", strtotime($content['details']['end'])) ?> | 
-                                    <i class="fas fa-map-marker-alt"></i> Room: <?= $content['details']['room'] ?>
-                                </div>
+                                <span class="h5 mb-0 font-weight-bold text-primary"><?= $content['details']['code'] ?> — <?= $content['details']['title'] ?></span>
+                                <span class="badge badge-secondary ml-2">Sec <?= $content['details']['section'] ?></span>
                             </div>
-                            <i class="fas fa-chevron-down"></i>
+                            <i class="fas fa-chevron-down text-muted"></i>
                         </button>
                     </div>
 
                     <div id="collapse<?= $i ?>" class="collapse" data-parent="#courseAccordion">
-                        <div class="print-section">
-                            <div class="d-none d-print-block mb-4 text-center">
-                                <h3>Attendance Sheet</h3>
-                                <h5><?= $content['details']['code'] ?> - <?= $content['details']['title'] ?> (Section: <?= $content['details']['section'] ?>)</h5>
-                                <p>Date: <?= date('M d, Y', strtotime($view_date)) ?> | Room: <?= $content['details']['room'] ?></p>
+                        <div class="card-body">
+                            
+                            <div class="row mb-3 no-print align-items-center">
+                                <div class="col-md-6 search-container">
+                                    <i class="fas fa-search" style="position:absolute; left:25px; top:10px; color:#aaa;"></i>
+                                    <input type="text" class="form-control pl-5" placeholder="Search student..." onkeyup="filterStudents(this, <?= $i ?>)">
+                                </div>
+                                <div class="col-md-6 text-right">
+                                    <button type="button" class="btn btn-dark btn-sm" onclick="printSection(<?= $i ?>)">
+                                        <i class="fas fa-print mr-1"></i> Print This Section
+                                    </button>
+                                </div>
                             </div>
 
                             <form action="take_attendance.php" method="POST">
@@ -201,47 +184,39 @@ if ($result) {
                                 <input type="hidden" name="section_id" value="<?= $content['details']['sec_id'] ?>">
                                 <input type="hidden" name="attendance_date" value="<?= $view_date ?>">
 
-                                <div class="card-body p-0">
-                                    <table class="table table-bordered table-hover mb-0">
-                                        <thead class="thead-light">
+                                <table class="table table-sm table-bordered student-table-<?= $i ?>">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>AG No.</th>
+                                            <th>Student Name</th>
+                                            <th class="text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach($content['students'] as $ag_no => $s): ?>
                                             <tr>
-                                                <th>AG Number</th>
-                                                <th>Student Name</th>
-                                                <th class="text-center">Status</th>
+                                                <td><?= $ag_no ?></td>
+                                                <td><?= htmlspecialchars($s['full_name']) ?></td>
+                                                <td class="text-center">
+                                                    <!-- Live Status text for printing -->
+                                                    <span class="print-status-text" id="status-text-<?= $s['student_id'] ?>">Unmarked</span>
+                                                    
+                                                    <div class="btn-group btn-group-toggle no-print" data-toggle="buttons">
+                                                        <label class="btn btn-sm btn-outline-success <?= ($s['status'] == 'Present') ? 'active' : '' ?>">
+                                                            <input type="radio" name="status[<?= $s['student_id'] ?>]" value="Present" <?= ($s['status'] == 'Present') ? 'checked' : '' ?>> P
+                                                        </label>
+                                                        <label class="btn btn-sm btn-outline-danger <?= ($s['status'] == 'Absent') ? 'active' : '' ?>">
+                                                            <input type="radio" name="status[<?= $s['student_id'] ?>]" value="Absent" <?= ($s['status'] == 'Absent') ? 'checked' : '' ?>> A
+                                                        </label>
+                                                    </div>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach($content['students'] as $ag_no => $s): ?>
-                                                <tr>
-                                                    <td><?= $ag_no ?></td>
-                                                    <td><?= htmlspecialchars($s['full_name']) ?></td>
-                                                    <td class="text-center">
-                                                        <span class="print-only-status">
-                                                            <?= $s['status'] ? $s['status'] : 'Not Marked' ?>
-                                                        </span>
-
-                                                        <div class="btn-group btn-group-toggle no-print" data-toggle="buttons">
-                                                            <label class="btn btn-sm btn-outline-success <?= ($s['status'] == 'Present' || !$s['status']) ? 'active' : '' ?>">
-                                                                <input type="radio" name="status[<?= $s['student_id'] ?>]" value="Present" <?= ($s['status'] == 'Present' || !$s['status']) ? 'checked' : '' ?>> Present
-                                                            </label>
-                                                            <label class="btn btn-sm btn-outline-danger <?= ($s['status'] == 'Absent') ? 'active' : '' ?>">
-                                                                <input type="radio" name="status[<?= $s['student_id'] ?>]" value="Absent" <?= ($s['status'] == 'Absent') ? 'checked' : '' ?>> Absent
-                                                            </label>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                                 
-                                <div class="submit-area d-flex justify-content-between p-3 no-print">
-                                    <button type="button" class="btn btn-secondary" onclick="printSection(<?= $i ?>)">
-                                        <i class="fas fa-print mr-1"></i> Print Report
-                                    </button>
-                                    <button type="submit" class="btn btn-primary px-5">
-                                        <i class="fas fa-save mr-1"></i> <?= $content['details']['is_submitted'] ? 'Update Records' : 'Save Attendance' ?>
-                                    </button>
+                                <div class="mt-4 no-print text-right">
+                                    <button type="submit" class="btn btn-primary px-5 shadow-sm">Save to Database</button>
                                 </div>
                             </form>
                         </div>
@@ -257,10 +232,48 @@ if ($result) {
 
 <script>
 function printSection(index) {
-    const target = document.querySelector('.print-target-' + index);
-    target.classList.add('print-section');
+    const card = document.getElementById('card-' + index);
+    
+    // 1. Update the status text based on current radio selections
+    const rows = card.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const radios = row.querySelectorAll('input[type="radio"]');
+        const statusSpan = row.querySelector('.print-status-text');
+        let selectedValue = "Unmarked";
+        
+        radios.forEach(radio => {
+            if (radio.checked) {
+                selectedValue = radio.value;
+            }
+        });
+        
+        statusSpan.innerText = selectedValue;
+        
+        // Color coding for print status
+        if(selectedValue === "Present") statusSpan.style.color = "green";
+        else if(selectedValue === "Absent") statusSpan.style.color = "red";
+        else statusSpan.style.color = "black";
+    });
+
+    // 2. Add 'printing' class to the specific card so CSS can hide others
+    card.classList.add('printing');
+    
+    // 3. Trigger Print
     window.print();
-    target.classList.remove('print-section');
+    
+    // 4. Cleanup
+    card.classList.remove('printing');
+}
+
+function filterStudents(input, index) {
+    let filter = input.value.toUpperCase();
+    let table = document.querySelector('.student-table-' + index);
+    let tr = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < tr.length; i++) {
+        let txtValue = tr[i].textContent || tr[i].innerText;
+        tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+    }
 }
 </script>
 </body>
