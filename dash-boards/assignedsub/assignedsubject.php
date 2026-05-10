@@ -131,7 +131,7 @@ if ($result) {
         <div class="col-md-6 text-right">
             <form method="GET" class="form-inline justify-content-end">
                 <input type="date" name="date" class="form-control mr-2" value="<?= $view_date ?>" onchange="this.form.submit()">
-                <a href="../logout.php" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+                <a href="../../logout.php" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Log Out</a>
             </form>
         </div>
     </div>
