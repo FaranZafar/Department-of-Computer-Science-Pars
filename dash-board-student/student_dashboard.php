@@ -80,7 +80,7 @@ $attendance_records = mysqli_query($con, $attendance_query);
 
 <nav class="navbar navbar-dark py-3">
     <div class="container">
-        <a class="navbar-brand font-weight-bold" href="#"> PARS CAMPUS</a>
+        <a class="navbar-brand font-weight-bold" href="#">Department Of Computer Science Pars</a>
         <a href="../logout.php" class="btn btn-outline-warning btn-sm px-3">Logout</a>
     </div>
 </nav>
