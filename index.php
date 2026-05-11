@@ -48,7 +48,7 @@
 
     <script>
         // Set the delay in milliseconds (e.g., 3000ms = 3 seconds)
-        const delay = 8000; 
+        const delay = 4000; 
         const nextPage = "./homepage/home.php"; // Replace with your actual next page file
 
         setTimeout(() => {
