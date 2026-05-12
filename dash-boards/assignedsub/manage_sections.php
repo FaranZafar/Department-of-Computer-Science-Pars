@@ -34,7 +34,7 @@ if (isset($_GET['delete'])) {
 // --- 3. FETCH DATA ---
 $sections = $con->query("SELECT s.*, sem.semester_name, d.degree_name 
                         FROM sections s 
-                        JOIN semester sem ON s.semester_id = sem.semester_id 
+                        LEFT JOIN semester sem ON s.semester_id = sem.semester_id 
                         LEFT JOIN degree d ON s.degree_id = d.degree_id
                         ORDER BY s.section_id DESC")->fetch_all(MYSQLI_ASSOC);
 
@@ -60,13 +60,43 @@ if (isset($_GET['edit'])) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
-        .container { margin-top: 40px; }
-        .card { border: none; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
-        .form-control, .custom-select { border-radius: 10px; height: 45px; }
-        .btn-primary { background: #4e73df; border: none; border-radius: 10px; font-weight: 600; padding: 12px; }
-        .badge-semester { background: #eef2ff; color: #6366f1; padding: 6px 12px; border-radius: 8px; font-weight: 600; }
-        .table thead th { border-top: none; background: #f8f9fc; text-transform: uppercase; font-size: 11px; color: #4e73df; }
+        body { 
+            background-color: #f0f2f5; 
+            font-family: 'Segoe UI', sans-serif;
+         }
+        .container { 
+            margin-top: 40px; 
+        }
+        .card { 
+            border: none; 
+            border-radius: 15px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.05); 
+        }
+        .form-control, .custom-select { 
+            border-radius: 10px; 
+            height: 45px; 
+        }
+        .btn-primary { 
+            background: #4e73df; 
+            border: none; 
+            border-radius: 10px; 
+            font-weight: 600; 
+            padding: 12px; 
+        }
+        .badge-semester { 
+            background: #eef2ff; 
+            color: #6366f1; 
+            padding: 6px 12px; 
+            border-radius: 8px; 
+            font-weight: 600; 
+        }
+        .table thead th { 
+            border-top: none; 
+            background: #f8f9fc; 
+            text-transform: uppercase; 
+            font-size: 11px; 
+            color: #4e73df; 
+        }
     </style>
 </head>
 <body>
@@ -130,17 +160,18 @@ if (isset($_GET['edit'])) {
                             <thead>
                                 <tr>
                                     <th class="pl-4">Degree</th>
+                                     <th>Semester</th>
                                     <th>Section Name</th>
-                                    <th>Semester</th>
-                                    <th class="text-right pr-4">Action</th>
+                                    <th class="text-center pr-4">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach($sections as $row): ?>
                                 <tr>
                                     <td class="pl-4 align-middle small text-muted"><?php echo $row['degree_name']; ?></td>
-                                    <td class="align-middle font-weight-bold"><?php echo $row['section_name']; ?></td>
                                     <td class="align-middle"><span class="badge-semester"><?php echo $row['semester_name']; ?></span></td>
+                                    <td class="align-middle font-weight-bold"><?php echo $row['section_name']; ?></td>
+                                    
                                     <td class="text-right pr-4 align-middle">
                                         <a href="?edit=<?php echo $row['section_id']; ?>" class="text-warning mr-3">Edit</a>
                                         <a href="?delete=<?php echo $row['section_id']; ?>" class="text-danger" onclick="return confirm('Delete?')">Delete</a>

@@ -172,7 +172,7 @@ if ($result) {
                         <div class="print-header-section">
                             <div class="print-top-row">
                                 <div class="left-logo">
-                                    <img src="../../images/pars.png" alt="UAF Logo" class="print-logo">
+                                    <img src="../images/pars.png" alt="UAF Logo" class="print-logo">
                                 </div>
                                 <div class="uni-info">
                                     <h2>UNIVERSITY OF AGRICULTURE FAISALABAD</h2>
