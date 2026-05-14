@@ -5,6 +5,11 @@ include_once("../../dbconnection.php");
 // 1. HANDLE MESSAGES
 $message = $_GET['msg'] ?? null;
 
+// Capture current search parameters to persist them in URLs
+$search_degree = $_GET['f_degree'] ?? '';
+$search_semester = $_GET['f_semester'] ?? '';
+$search_query_string = "&f_degree=" . urlencode($search_degree) . "&f_semester=" . urlencode($search_semester);
+
 // 2. HANDLE DELETE
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
@@ -12,7 +17,8 @@ if (isset($_GET['delete'])) {
     $stmt->bind_param("i", $id);
     
     if ($stmt->execute()) {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?msg=" . urlencode("Course deleted successfully!"));
+        // Redirect keeping the search filters active
+        header("Location: " . $_SERVER['PHP_SELF'] . "?msg=" . urlencode("Course deleted successfully!") . $search_query_string);
         exit();
     } else {
         $message = "Error deleting: " . $con->error;
@@ -30,13 +36,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if (!empty($code) && !empty($title) && !empty($deg_id) && !empty($sem_id)) {
         if ($id) {
-            // UPDATE EXISTING (Added degree_id to update)
             $sql = "UPDATE courses SET course_code = ?, course_title = ?, credit_hours = ?, semester_id = ?, degree_id = ? WHERE course_id = ?";
             $stmt = $con->prepare($sql);
             $stmt->bind_param("sssiii", $code, $title, $cr_hours, $sem_id, $deg_id, $id);
             $action = "updated";
         } else {
-            // INSERT NEW
             $sql = "INSERT INTO courses (course_code, course_title, credit_hours, semester_id, degree_id) VALUES (?, ?, ?, ?, ?)";
             $stmt = $con->prepare($sql);
             $stmt->bind_param("sssii", $code, $title, $cr_hours, $sem_id, $deg_id);
@@ -44,7 +48,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         if ($stmt->execute()) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?msg=" . urlencode("Course $action successfully!"));
+            // Redirect keeping the search filters active
+            header("Location: " . $_SERVER['PHP_SELF'] . "?msg=" . urlencode("Course $action successfully!") . $search_query_string);
             exit();
         } else {
             $message = "Database Error: " . $con->error;
@@ -52,28 +57,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-// 4. FETCH ALL COURSES (USING LEFT JOIN TO SHOW EVERYTHING)
+// 4. SEARCH & FILTER LOGIC
 $query = "SELECT courses.*, semester.semester_name, degree.degree_name 
           FROM courses 
           LEFT JOIN semester ON courses.semester_id = semester.semester_id 
-          LEFT JOIN degree ON courses.degree_id = degree.degree_id
-          ORDER BY courses.course_id DESC";
+          LEFT JOIN degree ON courses.degree_id = degree.degree_id 
+          WHERE 1=1";
 
-$result = $con->query($query);
-
-// Error handling to help you debug if the query fails
-if (!$result) {
-    die("Query Failed: " . $con->error);
+if (!empty($search_degree)) {
+    $query .= " AND courses.degree_id = '" . $con->real_escape_string($search_degree) . "'";
+}
+if (!empty($search_semester)) {
+    $query .= " AND courses.semester_id = '" . $con->real_escape_string($search_semester) . "'";
 }
 
-$courses = $result->fetch_all(MYSQLI_ASSOC);
+$query .= " ORDER BY courses.course_id DESC";
+$result = $con->query($query);
+$courses = ($result) ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
 // 5. FETCH ALL SEMESTERS & DEGREES FOR DROPDOWNS
 $sem_res = $con->query("SELECT * FROM semester ORDER BY semester_name ASC");
-$all_semesters = $sem_res->fetch_all(MYSQLI_ASSOC);
+$all_semesters = ($sem_res) ? $sem_res->fetch_all(MYSQLI_ASSOC) : [];
 
 $degree_res = $con->query("SELECT * FROM degree ORDER BY degree_name ASC");
-$all_degrees = $degree_res->fetch_all(MYSQLI_ASSOC);
+$all_degrees = ($degree_res) ? $degree_res->fetch_all(MYSQLI_ASSOC) : [];
 
 // 6. FETCH DATA FOR EDIT MODE
 $editData = null;
@@ -82,8 +89,7 @@ if (isset($_GET['edit'])) {
     $stmt = $con->prepare("SELECT * FROM courses WHERE course_id = ?");
     $stmt->bind_param("i", $editId);
     $stmt->execute();
-    $res = $stmt->get_result(); 
-    $editData = $res->fetch_assoc();
+    $editData = $stmt->get_result()->fetch_assoc();
 }
 ?>
 
@@ -101,14 +107,16 @@ if (isset($_GET['edit'])) {
         .form-flex { display: flex; gap: 15px; margin-bottom: 30px; align-items: flex-end; flex-wrap: wrap; }
         .form-group { flex: 1; min-width: 180px; }
         label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #666; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; transition: 0.3s; }
-        input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 5px rgba(74,144,226,0.3); }
-        .btn { padding: 11px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; color: white; transition: 0.3s; width: 100%; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn { padding: 11px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; color: white; transition: 0.3s; }
         .btn-add { background: var(--primary); }
         .btn-update { background: var(--success); }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .btn-search { background: var(--dark); }
+        .btn-reset { background: #95a5a6; text-decoration: none; display: inline-block; padding: 11px 20px; border-radius: 6px; color: white; }
+        .search-box { background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 25px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
-        th { background: #f8f9fa; color: #555; font-size: 0.9rem; }
+        th { background: #f8f9fa; color: #555; }
         .badge { padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; font-weight: bold; }
         .edit { background: #fff3cd; color: #856404; }
         .delete { background: #f8d7da; color: #721c24; }
@@ -119,13 +127,14 @@ if (isset($_GET['edit'])) {
 <body>
 
 <div class="container">
-    <h2><?php echo $editData ? 'Edit Course Details' : 'Course Management Dashboard'; ?></h2>
+    <h2><?php echo $editData ? 'Edit Course' : 'Course Management'; ?></h2>
     
     <?php if($message): ?>
         <div class='msg'><?php echo htmlspecialchars($message); ?></div>
     <?php endif; ?>
 
-    <form method="POST" action="?">
+    <!-- ADD/EDIT FORM -->
+    <form method="POST" action="?<?php echo ltrim($search_query_string, '&'); ?>">
         <?php if ($editData): ?>
             <input type="hidden" name="course_id" value="<?php echo $editData['course_id']; ?>">
         <?php endif; ?>
@@ -133,80 +142,104 @@ if (isset($_GET['edit'])) {
         <div class="form-flex">
             <div class="form-group">
                 <label>Course Code</label>
-                <input type="text" name="course_code" required value="<?php echo $editData['course_code'] ?? ''; ?>" placeholder="CS-410">
+                <input type="text" name="course_code" required value="<?php echo $editData['course_code'] ?? ''; ?>">
             </div>
-
             <div class="form-group">
                 <label>Course Title</label>
-                <input type="text" name="course_title" required value="<?php echo $editData['course_title'] ?? ''; ?>" placeholder="Database Systems">
+                <input type="text" name="course_title" required value="<?php echo $editData['course_title'] ?? ''; ?>">
             </div>
-
             <div class="form-group">
                 <label>Credit Hours</label>
-                <input type="text" name="credit_hours" required value="<?php echo $editData['credit_hours'] ?? ''; ?>" placeholder="3(3-0)">
+                <input type="text" name="credit_hours" required value="<?php echo $editData['credit_hours'] ?? ''; ?>">
             </div>
-
             <div class="form-group">
-                <label>Degree Program</label>
-                <select name="degree_id" id="degree_select" required onchange="filterSemesters()">
+                <label>Degree</label>
+                <select name="degree_id" id="degree_select" required onchange="filterOptions('degree_select', 'semester_select')">
                     <option value="">-- Select Degree --</option>
                     <?php foreach ($all_degrees as $d): ?>
-                        <option value="<?php echo $d['degree_id']; ?>" 
-                            <?php echo (isset($editData) && $editData['degree_id'] == $d['degree_id']) ? 'selected' : ''; ?>>
+                        <option value="<?php echo $d['degree_id']; ?>" <?php echo (isset($editData) && $editData['degree_id'] == $d['degree_id']) ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($d['degree_name']); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             </div>
-            
             <div class="form-group">
-                <label>Target Semester</label>
+                <label>Semester</label>
                 <select name="semester_id" id="semester_select" required>
                     <option value="">-- Choose Semester --</option>
                     <?php foreach ($all_semesters as $s): ?>
-                        <option value="<?php echo $s['semester_id']; ?>" 
-                                data-degree="<?php echo $s['degree_id']; ?>"
-                            <?php echo (isset($editData) && $editData['semester_id'] == $s['semester_id']) ? 'selected' : ''; ?>>
+                        <option value="<?php echo $s['semester_id']; ?>" data-degree="<?php echo $s['degree_id']; ?>" <?php echo (isset($editData) && $editData['semester_id'] == $s['semester_id']) ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($s['semester_name']); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             </div>
-
-            <div class="form-group" style="flex: 0.5;">
-                <button type="submit" class="btn <?php echo $editData ? 'btn-update' : 'btn-add'; ?>">
-                    <?php echo $editData ? 'Update' : 'Save'; ?>
-                </button>
-            </div>
+            <button type="submit" class="btn <?php echo $editData ? 'btn-update' : 'btn-add'; ?>">
+                <?php echo $editData ? 'Update' : 'Save'; ?>
+            </button>
         </div>
     </form>
 
-    <h3>Active Course List</h3>
+    <!-- SEARCH BOX -->
+    <div class="search-box">
+        <form method="GET" action="?">
+            <div class="form-flex" style="margin-bottom:0">
+                <div class="form-group">
+                    <label>Filter Degree</label>
+                    <select name="f_degree" id="search_degree_select" onchange="filterOptions('search_degree_select', 'search_semester_select')">
+                        <option value="">All Degrees</option>
+                        <?php foreach ($all_degrees as $d): ?>
+                            <option value="<?php echo $d['degree_id']; ?>" <?php echo ($search_degree == $d['degree_id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($d['degree_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Filter Semester</label>
+                    <select name="f_semester" id="search_semester_select">
+                        <option value="">All Semesters</option>
+                        <?php foreach ($all_semesters as $s): ?>
+                            <option value="<?php echo $s['semester_id']; ?>" data-degree="<?php echo $s['degree_id']; ?>" <?php echo ($search_semester == $s['semester_id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($s['semester_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" class="btn btn-search">Search</button>
+                    <a href="?" class="btn-reset">Reset</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+   <!-- TABLE -->
     <table>
         <thead>
             <tr>
                 <th>Code</th>
-                <th>Course Title</th>
-                <th>Credit Hours</th>
-                <th>Degree Program</th>
+                <th>Title</th>
+                <th>Cr. Hours</th> <!-- Added Header -->
+                <th>Degree</th>
                 <th>Semester</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($courses)): ?>
-                <tr><td colspan="6" style="text-align:center; padding:20px; color:#999;">No courses found in database.</td></tr>
+                <tr><td colspan="6" style="text-align:center; padding:20px; color:#999;">No matching courses found.</td></tr>
             <?php else: ?>
                 <?php foreach ($courses as $c): ?>
                 <tr>
                     <td><code><?php echo htmlspecialchars($c['course_code']); ?></code></td>
-                    <td><strong><?php echo htmlspecialchars($c['course_title']); ?></strong></td>
-                    <td><?php echo htmlspecialchars($c['credit_hours']); ?></td>
-                    <td><small><?php echo htmlspecialchars($c['degree_name']); ?></small></td>
-                    <td><span style="color: var(--primary); font-weight:600;"><?php echo htmlspecialchars($c['semester_name']); ?></span></td>
+                    <td><?php echo htmlspecialchars($c['course_title']); ?></td>
+                    <td><?php echo htmlspecialchars($c['credit_hours']); ?></td> <!-- Added Data Cell -->
+                    <td><?php echo htmlspecialchars($c['degree_name']); ?></td>
+                    <td><?php echo htmlspecialchars($c['semester_name']); ?></td>
                     <td>
-                        <a href="?edit=<?php echo $c['course_id']; ?>" class="badge edit">Edit</a>
-                        <a href="?delete=<?php echo $c['course_id']; ?>" class="badge delete" onclick="return confirm('Delete this course?')">Delete</a>
+                        <a href="?edit=<?php echo $c['course_id'] . $search_query_string; ?>" class="badge edit">Edit</a>
+                        <a href="?delete=<?php echo $c['course_id'] . $search_query_string; ?>" class="badge delete" onclick="return confirm('Delete?')">Delete</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -216,38 +249,24 @@ if (isset($_GET['edit'])) {
 </div>
 
 <script>
-function filterSemesters() {
-    const degreeId = document.getElementById('degree_select').value;
-    const semesterSelect = document.getElementById('semester_select');
+function filterOptions(degreeSelectId, semesterSelectId) {
+    const degreeId = document.getElementById(degreeSelectId).value;
+    const semesterSelect = document.getElementById(semesterSelectId);
     const options = semesterSelect.querySelectorAll('option');
-
-    // If we're not in "Edit" mode initial load, clear the value
-    // If degreeId is empty, we keep it cleared
-    if (degreeId === "") {
-        semesterSelect.value = "";
-    }
 
     options.forEach(option => {
         const optionDegreeId = option.getAttribute('data-degree');
-        
-        // Always show the default placeholder
-        if (option.value === "") {
-            option.style.display = "block";
-            return;
-        }
-
-        // Show/Hide based on degree_id matching
-        if (degreeId === "" || optionDegreeId === degreeId) {
+        if (option.value === "" || degreeId === "" || optionDegreeId === degreeId) {
             option.style.display = "block";
         } else {
             option.style.display = "none";
         }
     });
 }
-
-// Ensure the list is filtered correctly if page loads in Edit mode
-window.onload = filterSemesters;
+window.onload = function() {
+    filterOptions('degree_select', 'semester_select');
+    filterOptions('search_degree_select', 'search_semester_select');
+};
 </script>
-
 </body>
 </html>
