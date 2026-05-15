@@ -2,6 +2,7 @@
 session_start();
 include_once("../dbconnection.php");
 
+// 1. SECURITY & SESSION CHECK
 if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== "Student") {
     header("Location: ../login.php");
     exit();
@@ -9,26 +10,30 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== "Student") {
 
 $student_id = $_SESSION['user_id'];
 
-/** * 1. FETCH STUDENT PROFILE
+/** 
+ * 2. FETCH STUDENT PROFILE & DEGREE
  */
 $student_info_query = "
-    SELECT st.*, s.semester_name, sec.section_name 
+    SELECT st.*, s.semester_name, sec.section_name, d.degree_name 
     FROM students st 
     LEFT JOIN semester s ON st.semester_id = s.semester_id 
     LEFT JOIN sections sec ON st.section_id = sec.section_id 
+    LEFT JOIN degree d ON sec.degree_id = d.degree_id
     WHERE st.student_id = '$student_id'";
 
 $student_result = mysqli_query($con, $student_info_query);
 $student_data = mysqli_fetch_assoc($student_result);
 
-$display_name = $student_data['name'] ?? ($student_data['FirstName'] ?? $_SESSION['user_name']);
+$display_name = $student_data['name'] ?? ($student_data['full_name'] ?? $_SESSION['user_name']);
 $ag_no = $student_data['ag_no'] ?? 'N/A';
 $semester = $student_data['semester_name'] ?? 'Not Assigned';
 $section_name = $student_data['section_name'] ?? 'Not Assigned';
-
-/** * 2. FETCH SCHEDULE
- */
+$degree_name = $student_data['degree_name'] ?? 'Degree Not Set';
 $section_id = $student_data['section_id'] ?? 0;
+
+/** 
+ * 3. FETCH SCHEDULE
+ */
 $course_query = "
     SELECT 
         c.course_title, c.course_code, 
@@ -41,7 +46,9 @@ $course_query = "
 
 $courses = mysqli_query($con, $course_query);
 
-/** * 3. ATTENDANCE SUMMARY
+/** 
+ * 4. ATTENDANCE SUMMARY QUERY
+ * This defines the variable that was causing your error.
  */
 $attendance_query = "
     SELECT 
@@ -51,7 +58,7 @@ $attendance_query = "
     FROM student_attendance a
     JOIN courses c ON a.course_id = c.course_id
     WHERE a.student_id = '$student_id'
-    GROUP BY c.course_code";
+    GROUP BY c.course_code, c.course_title";
 
 $attendance_records = mysqli_query($con, $attendance_query);
 ?>
@@ -74,6 +81,8 @@ $attendance_records = mysqli_query($con, $attendance_query);
         .badge-soft-primary { background-color: #e7f0ff; color: #0056b3; }
         .badge-code { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; font-size: 0.75rem; }
         .progress { border-radius: 10px; height: 7px; }
+        .info-label { color: #adb5bd; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+        .info-value { color: #152259; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -89,11 +98,12 @@ $attendance_records = mysqli_query($con, $attendance_query);
     <div class="card profile-card p-4 mb-4 shadow">
         <div class="row align-items-center">
             <div class="col-md-7">
-                <h2 class="mb-2 font-weight-bold text-capitalize">Welcome, <?= htmlspecialchars($display_name) ?></h2>
+                <h2 class="mb-0 font-weight-bold text-capitalize">Welcome, <?= htmlspecialchars($display_name) ?></h2>
+                <p class="text-warning font-weight-bold mb-3"><?= htmlspecialchars($degree_name) ?></p>
                 <div class="d-flex flex-wrap align-items-center">
-                    <span class="mr-3 mb-2"><strong>Ag No:</strong> <?= $ag_no ?></span>
-                    <span class="mr-3 mb-2"><strong>Semester:</strong> <?= $semester ?></span>
-                    <span class="section-badge mb-2"><i class="fas fa-users mr-1"></i> Section: <?= $section_name ?></span>
+                    <span class="mr-3 mb-2"><strong>Ag No:</strong> <?= htmlspecialchars($ag_no) ?></span>
+                    <span class="mr-3 mb-2"><strong>Semester:</strong> <?= htmlspecialchars($semester) ?></span>
+                    <span class="section-badge mb-2"><i class="fas fa-users mr-1"></i> Section: <?= htmlspecialchars($section_name) ?></span>
                 </div>
             </div>
             <div class="col-md-5 text-md-right">
@@ -104,6 +114,7 @@ $attendance_records = mysqli_query($con, $attendance_query);
     </div>
 
     <div class="row">
+        <!-- LEFT COLUMN: SCHEDULE -->
         <div class="col-lg-8">
             <div class="card table-card bg-white mb-4">
                 <div class="card-header bg-white py-3">
@@ -126,15 +137,15 @@ $attendance_records = mysqli_query($con, $attendance_query);
                                     <td>
                                         <div class="d-flex align-items-center mb-1">
                                             <span class="badge badge-code mr-2"><?= $row['course_code'] ?></span>
-                                            <span class="font-weight-bold"><?= $row['course_title'] ?></span>
+                                            <span class="font-weight-bold"><?= htmlspecialchars($row['course_title']) ?></span>
                                         </div>
-                                        <small class="text-muted"><i class="fas fa-chalkboard-teacher mr-1"></i><?= $row['FirstName'] ?> <?= $row['LastName'] ?></small>
+                                        <small class="text-muted"><i class="fas fa-chalkboard-teacher mr-1"></i><?= htmlspecialchars($row['FirstName'] . ' ' . $row['LastName']) ?></small>
                                     </td>
                                     <td>
                                         <span class="badge badge-soft-primary px-2"><?= $row['day'] ?></span><br>
                                         <small><?= date("h:i A", strtotime($row['time_start'])) ?> - <?= date("h:i A", strtotime($row['time_end'])) ?></small>
                                     </td>
-                                    <td class="align-middle small">Room <?= $row['room_id'] ?></td>
+                                    <td class="align-middle small">Room <?= htmlspecialchars($row['room_id']) ?></td>
                                     <td class="align-middle">
                                         <a href="view_subject_attendance.php?course_code=<?= $row['course_code'] ?>" class="btn btn-sm btn-primary py-1 px-3" style="border-radius: 15px;">View</a>
                                     </td>
@@ -149,6 +160,7 @@ $attendance_records = mysqli_query($con, $attendance_query);
             </div>
         </div>
 
+        <!-- RIGHT COLUMN: PROFILE & STATS -->
         <div class="col-lg-4">
             <div class="card table-card bg-white p-4">
                 <h5 class="font-weight-bold mb-4">Attendance Stats</h5>
@@ -159,7 +171,7 @@ $attendance_records = mysqli_query($con, $attendance_query);
                     ?>
                     <div class="mb-4">
                         <div class="d-flex justify-content-between mb-1">
-                            <span class="small font-weight-bold"><?= $att['course_code'] ?> <span class="text-muted font-weight-normal">| <?= $att['course_title'] ?></span></span>
+                            <span class="small font-weight-bold"><?= $att['course_code'] ?> <span class="text-muted font-weight-normal">| <?= htmlspecialchars($att['course_title']) ?></span></span>
                             <span class="small text-<?= $color ?> font-weight-bold"><?= round($percent, 1) ?>%</span>
                         </div>
                         <div class="progress">

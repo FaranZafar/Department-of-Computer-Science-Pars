@@ -11,11 +11,13 @@ $view_date = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 $teacher_res = mysqli_query($con, "SELECT FirstName, LastName FROM staff WHERE StaffID = '$teacher_id'");
 $teacher = mysqli_fetch_assoc($teacher_res);
 
-// FIXED QUERY: Uses LEFT JOIN to ensure the subject shows even if students aren't assigned yet
+// UPDATED QUERY: Joins degree and semester tables
 $query = "SELECT 
             at.subjectassigned_id, at.day, at.time_start, at.time_end,
             c.course_title, c.course_code, c.course_id,
             sec.section_name, sec.section_id,
+            deg.degree_name, 
+            sem.semester_name,
             r.room_name,
             s.full_name, s.ag_no, s.student_id,
             att.status AS daily_status,
@@ -26,6 +28,8 @@ $query = "SELECT
           FROM assigned_teacher at
           INNER JOIN courses c ON at.course_id = c.course_id
           INNER JOIN sections sec ON at.section_id = sec.section_id
+          INNER JOIN degree deg ON sec.degree_id = deg.degree_id
+          INNER JOIN semester sem ON sec.semester_id = sem.semester_id
           LEFT JOIN room r ON at.room_id = r.room_id
           LEFT JOIN students s ON sec.section_id = s.section_id 
           LEFT JOIN student_attendance att ON (s.student_id = att.student_id AND att.date = '$view_date' AND att.course_id = c.course_id)
@@ -37,7 +41,6 @@ $data = [];
 
 if ($result) {
     while($row = mysqli_fetch_assoc($result)) {
-        // Use subjectassigned_id for the key to handle multiple sections of the same course
         $course_key = $row['subjectassigned_id'];
         
         if (!isset($data[$course_key])) {
@@ -48,6 +51,8 @@ if ($result) {
                     'code' => $row['course_code'], 
                     'section' => $row['section_name'], 
                     'sec_id' => $row['section_id'],
+                    'degree' => $row['degree_name'],
+                    'semester' => $row['semester_name'],
                     'day' => $row['day'], 
                     'start' => $row['time_start'], 
                     'end' => $row['time_end'], 
@@ -81,9 +86,7 @@ if ($result) {
         .course-card { border: none; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden;}
         .btn-course { width: 100%; text-align: left; padding: 1.5rem; background: #fff; border: none; display: flex; justify-content: space-between; align-items: center; }
         .btn-course:not(.collapsed) { background-color: #eef2ff; border-bottom: 2px solid #2563eb; }
-        .sched-info { font-size: 0.85rem; color: #64748b; margin-top: 5px; }
-
-        /* PROFESSIONAL PRINT UI CSS */
+        .sched-info { font-size: 0.85rem; color: #64748b; margin-top: 5px; line-height: 1.6; }
         .print-header-section { display: none; }
         .print-only-status { display: none; font-weight: bold; }
 
@@ -92,27 +95,14 @@ if ($result) {
             .print-active, .print-active * { visibility: visible; }
             .print-active { position: absolute; left: 0; top: 0; width: 100%; background: white; }
             .no-print { display: none !important; }
-            
-            .print-header-section { 
-                display: block !important; 
-                margin-bottom: 20px;
-                border-bottom: 2px solid #000;
-                padding-bottom: 10px;
-            }
-            .print-top-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 10px;
-            }
+            .print-header-section { display: block !important; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .print-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
             .print-logo { width: 60px; height: auto; }
             .uni-info { text-align: center; margin-bottom: 15px; flex-grow: 1; }
             .uni-info h2 { margin: 0; font-weight: 800; font-size: 22px; text-transform: uppercase; }
-            
             .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; margin-bottom: 15px; }
             .meta-box { border-bottom: 1px dashed #ccc; padding: 2px 0; }
             .meta-label { font-weight: bold; width: 90px; display: inline-block; }
-
             table { width: 100% !important; border-collapse: collapse !important; }
             th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; border: 1px solid #000 !important; }
             td { border: 1px solid #000 !important; padding: 6px !important; }
@@ -138,7 +128,7 @@ if ($result) {
 
     <?php if (empty($data)): ?>
         <div class="alert alert-warning text-center">
-            No classes assigned for your Staff ID (<?= $teacher_id ?>) in the database.
+            No classes assigned for your Staff ID (<?= $teacher_id ?>) for this date.
         </div>
     <?php else: ?>
         <div id="courseAccordion">
@@ -149,7 +139,7 @@ if ($result) {
                         <button class="btn btn-course collapsed" data-toggle="collapse" data-target="#collapse<?= $i ?>">
                             <div>
                                 <span class="h5 mb-0 font-weight-bold"><?= $content['details']['code'] ?>: <?= $content['details']['title'] ?></span>
-                                <span class="badge badge-info ml-2">Section: <?= $content['details']['section'] ?></span>
+                                <span class="badge badge-info ml-2"><?= $content['details']['degree'] ?></span>
                                 
                                 <span class="badge badge-<?= $content['details']['is_submitted'] ? 'success' : 'danger' ?> ml-1">
                                     <i class="fas fa-<?= $content['details']['is_submitted'] ? 'check' : 'times' ?>-circle"></i> 
@@ -157,6 +147,7 @@ if ($result) {
                                 </span>
 
                                 <div class="sched-info">
+                                    <strong>Semester:</strong> <?= $content['details']['semester'] ?> | <strong>Section:</strong> <?= $content['details']['section'] ?><br>
                                     <i class="far fa-clock"></i> <?= $content['details']['day'] ?> | 
                                     <?= date("g:i A", strtotime($content['details']['start'])) ?> - <?= date("g:i A", strtotime($content['details']['end'])) ?> | 
                                     <i class="fas fa-map-marker-alt"></i> Room: <?= $content['details']['room'] ?>
@@ -182,10 +173,12 @@ if ($result) {
                             <div class="meta-grid">
                                 <div class="meta-box"><span class="meta-label">Course:</span> <?= $content['details']['code'] ?> - <?= $content['details']['title'] ?></div>
                                 <div class="meta-box"><span class="meta-label">Instructor:</span> <?= $teacher['FirstName'] ?> <?= $teacher['LastName'] ?></div>
+                                <div class="meta-box"><span class="meta-label">Degree:</span> <?= $content['details']['degree'] ?></div>
+                                <div class="meta-box"><span class="meta-label">Semester:</span> <?= $content['details']['semester'] ?></div>
                                 <div class="meta-box"><span class="meta-label">Section:</span> <?= $content['details']['section'] ?></div>
                                 <div class="meta-box"><span class="meta-label">Date:</span> <?= date('d-M-Y', strtotime($view_date)) ?></div>
-                                <div class="meta-box"><span class="meta-label">Schedule:</span> <?= $content['details']['day'] ?> (<?= $content['details']['start'] ?>)</div>
-                                <div class="meta-box"><span class="meta-label">Venue:</span><?= $content['details']['room'] ?></div>
+                                <div class="meta-box"><span class="meta-label">Schedule:</span> <?= $content['details']['day'] ?> (<?= date("g:i A", strtotime($content['details']['start'])) ?>)</div>
+                                <div class="meta-box"><span class="meta-label">Venue:</span> <?= $content['details']['room'] ?></div>
                             </div>
                         </div>
 
