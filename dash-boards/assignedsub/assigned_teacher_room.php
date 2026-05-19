@@ -92,6 +92,8 @@ $assignments = $con->query("SELECT at.*, s.FirstName, s.LastName, c.course_title
     <div class="row mb-4">
         <div class="col-md-3"><div class="card stat-card bg-primary text-white"><div class="card-body py-3 d-flex align-items-center"><i class="fas fa-database fa-2x mr-3"></i><div><small class="d-block">Total Records</small><strong><?= $total_assignments ?></strong></div></div></div></div>
         <div class="col-md-3"><div class="card stat-card bg-info text-white"><div class="card-body py-3 d-flex align-items-center"><i class="fas fa-user-tie fa-2x mr-3"></i><div><small class="d-block">Active Instructors</small><strong><?= $total_teachers ?></strong></div></div></div></div>
+        <a href="../coordinator.php" class="btn btn-outline-primary btn-block mt-4" style="border-radius:20px;">Back</a>
+
     </div>
 
     <!-- 2. ADD FORM -->

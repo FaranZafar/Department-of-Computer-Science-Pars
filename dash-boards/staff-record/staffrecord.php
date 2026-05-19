@@ -77,7 +77,7 @@ $result = $con->query($query);
                             </button>
                         </div>
                     </div>
-                        <a href="../coordinator.php" class="btn btn-primary">Back</a>
+                        <a href="../coordinator.php" class="btn btn-outline-primary">Back</a>
                         <br><br>
                     <div class="table-responsive">
                         <table class="table table-hover border-bottom">

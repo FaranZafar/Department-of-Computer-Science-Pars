@@ -1,0 +1,73 @@
+@startuml
+
+title "University Student & Teacher Attendance Management System"
+
+' Define swimlanes first
+|Student|
+|Teacher|
+|Coordinator|
+
+fork
+    |Student|
+    start
+    :Login;
+    :View daily classes schedule;
+    :Check attendance subject-wise;
+    stop
+
+fork
+    |Teacher|
+    start
+    :Login;
+    :View classes schedule;
+    :Take attendance subject/section-wise;
+    :Check previous attendance;
+    :Update attendance;
+    :Print attendance subject-wise;
+    stop
+
+fork
+    |Coordinator|
+    start
+    :Login;
+    :Add offered program (First Page);
+    :Add leadership member (First Page);
+    :View received messages;
+    
+    partition "Staff Management" {
+        :Check coordinator record;
+        :Check permanent teacher record;
+        :Take attendance (Permanent Teacher);
+        :Update/Delete permanent teacher;
+        :Check visiting teacher record;
+        :Take attendance (Visiting Teacher);
+        :Update/Delete visiting teacher;
+        :Check supporting staff record;
+        :Take attendance (Supporting Staff);
+        :Update/Delete supporting staff;
+        :Check previous attendance history;
+    }
+
+    partition "Student Management" {
+        :Add new student;
+        :Check student data;
+        :Assign semester to student;
+        :Assign section to student;
+        :Check graduated students;
+    }
+
+    partition "Academic & Infrastructure Setup" {
+        :Add new semester;
+        :Update new semester;
+        :Delete semester;
+        :Create sections according to semester-wise;
+        :Add new room;
+        :Assign rooms;
+        :Add new courses according to semester-wise;
+        :Update/Delete courses;
+        :Assign section, semester, and teachers;
+    }
+    stop
+end fork
+
+@enduml

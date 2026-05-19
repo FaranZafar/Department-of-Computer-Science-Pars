@@ -92,7 +92,7 @@ $result = $con->query($query);
                     </div>
 
                     <div class="table-responsive">
-                         <a href="../teacher-record.php" class="btn btn-primary">Back</a>
+                         <a href="../teacher-record.php" class="btn btn-outline-primary">Back</a>
                         <br><br>
                         <table class="table table-hover border-bottom">
                             <thead class="thead-custom bg-primary">

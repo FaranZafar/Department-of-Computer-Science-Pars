@@ -29,7 +29,7 @@ $result = $con->query($query);
         <div class="row justify-content-center">
             <div class="col-lg-11 table-container">
                 <h2 class="mb-4 text-center">Admin/Coordinator Records</h2>
-                <a href="../coordinator.php" class="btn btn-primary">Back</a>
+                <a href="../coordinator.php" class="btn btn-outline-primary">Back</a>
                 <br><br>
                 <table class="table table-bordered table-striped">
                     <thead class="thead-custom text-white bg-primary">

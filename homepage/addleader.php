@@ -168,6 +168,8 @@ if(isset($_POST['submit'])) {
                             ?>
                         </tbody>
                     </table>
+                <a href="../dash-boards/coordinator.php" class="btn btn-outline-primary btn-block mt-4" style="border-radius:20px;">Back</a>
+
                 </div>
             </div>
         </div>

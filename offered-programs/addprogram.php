@@ -89,6 +89,8 @@ $edit_data = ($edit_id !== null) ? $programs[$edit_id] : null;
                     <?php endforeach; ?>
                 </div>
                 <a href="program.php" class="btn btn-primary btn-block mt-4" style="border-radius:20px;">View Live Website</a>
+                <hr>
+                <a href="../dash-boards/coordinator.php" class="btn btn-outline-primary btn-block mt-4" style="border-radius:20px;">Back</a>
             </div>
         </div>
     </div>

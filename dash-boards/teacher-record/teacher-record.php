@@ -11,7 +11,7 @@
 <body>
     <div class="jumbotron">
         <div class="container mb-5">
-             <a href="../coordinator.php" class="btn btn-primary">Back</a>
+             <a href="../coordinator.php" class="btn btn-outline-primary">Back</a>
              <br><br>
             <div class="row">
                 <div class="col-md-4">
