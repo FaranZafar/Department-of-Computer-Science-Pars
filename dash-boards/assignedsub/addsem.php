@@ -133,7 +133,8 @@ if (isset($_GET['edit'])) {
         <h2>Semester Management</h2>
         <div><?php echo date('D, M d, Y'); ?></div>
     </div>
-
+     <a href="../coordinator.php" class="btn btn-outline-primary ">Back</a>
+    
     <!-- Stats Row -->
     <div class="stats-row">
         <div class="stat-card">

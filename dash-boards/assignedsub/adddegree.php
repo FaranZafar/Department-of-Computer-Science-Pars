@@ -70,7 +70,9 @@ if (isset($_GET['edit'])) {
     <meta charset="UTF-8">
     <title>Degree Management</title>
     <link rel="icon" type="image/png" href="../../images/pars.png">
-
+     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+     
     <style>
         :root { --primary: #4a90e2; --success: #2ecc71; --danger: #e74c3c; --dark: #2c3e50; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 40px; }
@@ -93,8 +95,10 @@ if (isset($_GET['edit'])) {
     </style>
 </head>
 <body>
-
+ <a href="../coordinator.php" class="badge badge-primary edit">Back</a>
+ 
 <div class="container">
+
     <h2><?php echo $editData ? 'Edit Degree' : 'Degree Management'; ?></h2>
     
     <?php if($message): ?>
@@ -102,10 +106,11 @@ if (isset($_GET['edit'])) {
     <?php endif; ?>
 
     <form method="POST" action="?">
+
         <?php if ($editData): ?>
             <input type="hidden" name="degree_id" value="<?php echo $editData['degree_id']; ?>">
         <?php endif; ?>
-
+        
         <div class="form-flex">
             <div class="form-group">
                 <label>Degree Name</label>

@@ -144,6 +144,8 @@ if (isset($_GET['edit'])) {
                                 class="btn btn-primary btn-block shadow-sm mt-3">
                             <?php echo $edit_mode ? 'Apply Changes' : 'Save Section'; ?>
                         </button>
+                        <a href="../coordinator.php" class="btn btn-outline-primary btn-block edit">Back</a>
+
                     </form>
                 </div>
             </div>

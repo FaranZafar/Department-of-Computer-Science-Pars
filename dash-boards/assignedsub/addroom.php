@@ -95,6 +95,8 @@ if (isset($_GET['edit'])) {
                                 class="btn <?php echo $edit_mode ? 'btn-warning' : 'btn-primary'; ?> btn-block font-weight-bold shadow-sm">
                             <?php echo $edit_mode ? 'Update Room' : 'Save Room'; ?>
                         </button>
+                        <a href="../coordinator.php" class="btn btn-outline-primary btn-block edit">Back</a>
+
                         
                         <?php if($edit_mode): ?>
                             <a href="addroom.php" class="btn btn-light btn-block border mt-2">Cancel</a>

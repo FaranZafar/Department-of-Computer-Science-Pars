@@ -127,6 +127,10 @@ if (isset($_GET['edit'])) {
 <body>
 
 <div class="container">
+    <hr>
+   <a href="../coordinator.php" class="badge badge-primary edit">Back</a>
+   <hr>
+    
     <h2><?php echo $editData ? 'Edit Course' : 'Course Management'; ?></h2>
     
     <?php if($message): ?>

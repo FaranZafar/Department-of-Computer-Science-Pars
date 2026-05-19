@@ -110,6 +110,11 @@ $percentage = ($att_stats['total'] > 0) ? round(($att_stats['present'] / $att_st
                     <span>Absent: <?php echo $att_stats['absent']; ?></span>
                 </div>
             </div>
+            <hr>
+           <a href="./view_students.php" class="btn btn-block btn-outline-primary">Back</a>
+            
+
+
         </div>
 
         <!-- Main Content -->

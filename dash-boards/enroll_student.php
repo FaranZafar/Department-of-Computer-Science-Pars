@@ -71,9 +71,11 @@ $degrees = $con->query("SELECT * FROM degree ORDER BY degree_name ASC")->fetch_a
             <div class="card">
                 <div class="card-header bg-primary py-3 d-flex justify-content-between align-items-center">
                     <h4 class="mb-0"><i class="fas fa-user-plus mr-2"></i> Student Registration</h4>
+                    <a href="./coordinator.php" class="btn btn-danger ">Back</a>
                     <a href="view_students.php" class="btn btn-sm btn-light text-primary font-weight-bold">
                         <i class="fas fa-list mr-1"></i> View Student List
                     </a>
+                   
                 </div>
                 
                 <div class="card-body p-4">
