@@ -7,8 +7,8 @@ $error = null;
 // HANDLE REGISTRATION
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $full_name   = $_POST['full_name'];
-    $ag_no       = $_POST['ag_no'];
-    $email       = $_POST['email'];
+    $ag_no       = trim($_POST['ag_no']);
+    $email       = trim($_POST['email']);
     $password    = $_POST['password']; 
     $phone       = $_POST['phone_no'];
     $dob         = $_POST['dob'];
@@ -19,15 +19,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $sem_id      = $_POST['semester_id'];
     $sec_id      = $_POST['section_id']; 
 
-    $sql = "INSERT INTO students (ag_no, section_id, full_name, email, password, phone_no, dob, gender, enrollment_date, status, degree_id, semester_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $con->prepare($sql);
-    $stmt->bind_param("sissssssssii", $ag_no, $sec_id, $full_name, $email, $password, $phone, $dob, $gender, $enroll_date, $status, $deg_id, $sem_id);
+    // --- 1. CHECK IF STUDENT ALREADY EXISTS ---
+    $check_sql = "SELECT student_id FROM students WHERE ag_no = ? OR email = ? LIMIT 1";
+    $check_stmt = $con->prepare($check_sql);
+    $check_stmt->bind_param("ss", $ag_no, $email);
+    $check_stmt->execute();
+    $check_stmt->store_result();
 
-    if ($stmt->execute()) {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?msg=" . urlencode("Student registered successfully!"));
-        exit();
-    } else { 
-        $error = "Error: " . $con->error; 
+    if ($check_stmt->num_rows > 0) {
+        // Record exists! Set an alert message instead of processing insertion
+        $error = "Warning: A student with this AG Registration Number or Email Address is already registered!";
+        $check_stmt->close();
+    } else {
+        $check_stmt->close();
+
+        // --- 2. PROCEED TO INSERT IF SAFE ---
+        $sql = "INSERT INTO students (ag_no, section_id, full_name, email, password, phone_no, dob, gender, enrollment_date, status, degree_id, semester_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $con->prepare($sql);
+        $stmt->bind_param("sissssssssii", $ag_no, $sec_id, $full_name, $email, $password, $phone, $dob, $gender, $enroll_date, $status, $deg_id, $sem_id);
+
+        if ($stmt->execute()) {
+            $stmt->close();
+            header("Location: " . $_SERVER['PHP_SELF'] . "?msg=" . urlencode("Student registered successfully!"));
+            exit();
+        } else { 
+            $error = "Database Error: " . $con->error; 
+            $stmt->close();
+        }
     }
 }
 
@@ -65,17 +83,21 @@ $degrees = $con->query("SELECT * FROM degree ORDER BY degree_name ASC")->fetch_a
             <?php endif; ?>
 
             <?php if($error): ?>
-                <div class="alert alert-danger shadow-sm"><?php echo $error; ?></div>
+                <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> <?php echo htmlspecialchars($error); ?>
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                </div>
             <?php endif; ?>
 
             <div class="card">
                 <div class="card-header bg-primary py-3 d-flex justify-content-between align-items-center">
                     <h4 class="mb-0"><i class="fas fa-user-plus mr-2"></i> Student Registration</h4>
-                    <a href="./coordinator.php" class="btn btn-danger ">Back</a>
-                    <a href="view_students.php" class="btn btn-sm btn-light text-primary font-weight-bold">
-                        <i class="fas fa-list mr-1"></i> View Student List
-                    </a>
-                   
+                    <div>
+                        <a href="./coordinator.php" class="btn btn-sm btn-danger mr-2 px-3">Back</a>
+                        <a href="view_students.php" class="btn btn-sm btn-light text-primary font-weight-bold">
+                            <i class="fas fa-list mr-1"></i> View Student List
+                        </a>
+                    </div>
                 </div>
                 
                 <div class="card-body p-4">
@@ -86,14 +108,14 @@ $degrees = $con->query("SELECT * FROM degree ORDER BY degree_name ASC")->fetch_a
                                     <label>Full Name</label>
                                     <input type="text" name="full_name" class="form-control" placeholder="Enter Full Name" required>
                                 </div>
-                                 <div class="form-group">
+                                <div class="form-group">
                                     <label>Gender</label>
                                     <select name="gender" class="form-control">
                                         <option value="Male">Male</option>
                                         <option value="Female">Female</option>
                                     </select>
                                 </div>
-                                 <div class="form-group">
+                                <div class="form-group">
                                     <label>Password</label>
                                     <input type="password" name="password" class="form-control" placeholder="Set Password" required>
                                 </div>
@@ -102,7 +124,7 @@ $degrees = $con->query("SELECT * FROM degree ORDER BY degree_name ASC")->fetch_a
                                     <label>AG Registration No</label>
                                     <input type="text" name="ag_no" class="form-control" placeholder="e.g. 2024-AG-123" required>
                                 </div>
-                               <div class="form-group">
+                                <div class="form-group">
                                     <label>Enrollment Date</label>
                                     <input type="date" name="enrollment_date" class="form-control" value="<?php echo date('Y-m-d'); ?>">
                                 </div>
@@ -113,17 +135,16 @@ $degrees = $con->query("SELECT * FROM degree ORDER BY degree_name ASC")->fetch_a
                                     </select>
                                 </div>
                             </div>
-                 <!-- 2nd column -->
                             <div class="col-md-6">
-                                 <div class="form-group">
+                                <div class="form-group">
                                     <label>Date of Birth</label>
                                     <input type="date" name="dob" class="form-control" required>
                                 </div>
-                                 <div class="form-group">
+                                <div class="form-group">
                                     <label>Email Address</label>
                                     <input type="email" name="email" class="form-control" placeholder="example@mail.com" required>
                                 </div>
-                                 <div class="form-group">
+                                <div class="form-group">
                                     <label>Phone Number</label>
                                     <input type="text" name="phone_no" class="form-control" placeholder="03xx-xxxxxxx">
                                 </div>
