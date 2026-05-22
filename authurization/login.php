@@ -47,7 +47,7 @@ if (isset($_POST['login_btn'])) {
                     header("Location: ../dash-board-student/student_dashboard.php");
                     break;
                 case "Admin":
-                    header("Location: ../dash-boards/admin_dashboard.php");
+                    header("Location: ../dash-boards/coordinator.php");
                     break;
                 default:
                     header("Location: ../index.php");
