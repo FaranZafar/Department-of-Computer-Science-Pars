@@ -27,7 +27,8 @@ if (isset($_POST['login_btn'])) {
 
             if ($role === "Student") {
                 $_SESSION['user_id'] = $row['student_id']; 
-                $_SESSION['user_name'] = $row['name'];
+                // FIXED: Changed 'name' to 'full_name' to match your database structure
+                // $_SESSION['user_name'] = $row['full_name'];
             } else {
                 $_SESSION['user_id'] = $row['StaffID'];
                 $_SESSION['user_name'] = $row['FirstName'] . " " . $row['LastName'];
@@ -99,12 +100,13 @@ if (isset($_POST['login_btn'])) {
                 <select name="role" class="form-control" required>
                   <option value="Coordinator">Coordinator</option>
                   <option value="Teacher">Teacher</option>
-                  <option value="Student">Student</option> <!-- FIXED VALUE AND LABEL -->
+                  <option value="Student">Student</option>
                   <option value="Admin">Admin</option>
                 </select>
             </div>
 
             <button type="submit" name="login_btn" class="btn btn-primary btn-block font-weight-bold">Log In</button>
+            <a class="btn btn-outline-primary btn-block font-weight-bold" href="../homepage/home.php">Back To HomePage</a>
         </form>
     </div>
 </body>
